@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediPulse C++ | Smart Medicine Reminder & Inventory Management System</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+    <!-- Top Floating Ambient Glow -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-logo">
+                    <div class="logo-icon">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="brand-name">MediPulse<span class="badge-cpp">C++</span></span>
+                        <span class="brand-sub">Healthcare OS</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#medicines" class="nav-item" data-tab="medicines">
+                    <i class="fa-solid fa-pills"></i>
+                    <span>Medicines</span>
+                    <span class="nav-badge" id="navMedicineCount">0</span>
+                </a>
+                <a href="#schedule" class="nav-item" data-tab="schedule">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Dose Schedule</span>
+                    <span class="nav-badge badge-warning" id="navRemindersCount">0</span>
+                </a>
+                <a href="#inventory" class="nav-item" data-tab="inventory">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Inventory & Stock</span>
+                </a>
+                <a href="#expiry" class="nav-item" data-tab="expiry">
+                    <i class="fa-solid fa-shield-virus"></i>
+                    <span>Expiry Radar</span>
+                    <span class="nav-badge badge-danger" id="navExpiredCount">0</span>
+                </a>
+                <a href="#api-console" class="nav-item" data-tab="api-console">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>C++ REST Console</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="server-status-card">
+                    <div class="status-indicator">
+                        <span class="status-dot pulse" id="statusDot"></span>
+                        <span class="status-text" id="statusText">C++ Server Connected</span>
+                    </div>
+                    <div class="server-meta">
+                        <span>Port 8080</span> &bull; 
+                        <span id="serverLatency">12ms</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top App Bar -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button class="mobile-toggle" id="mobileMenuBtn">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="page-title-wrap">
+                        <h1 class="page-title" id="pageTitle">Executive Health Dashboard</h1>
+                        <p class="page-subtitle" id="pageSubtitle">Real-time prescription monitoring, dose scheduling & automated stock tracking</p>
+                    </div>
+                </div>
+
+                <div class="top-bar-right">
+                    <!-- Live Time Clock -->
+                    <div class="live-clock-card">
+                        <i class="fa-regular fa-clock"></i>
+                        <div class="clock-details">
+                            <span class="clock-time" id="liveClock">--:--:--</span>
+                            <span class="clock-date" id="liveDate">--/--/----</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Demo Alarm Simulator -->
+                    <button class="btn btn-secondary btn-icon" id="btnSimulateAlarm" title="Test Live Dose Alarm for Viva Demo">
+                        <i class="fa-solid fa-bell"></i>
+                        <span>Simulate Alarm</span>
+                    </button>
+
+                    <!-- Add Medicine Button -->
+                    <button class="btn btn-primary" id="btnOpenAddModal">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>New Medicine</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Active Alerts Banner (Auto-populated if dose due or out of stock) -->
+            <div id="criticalAlertBanner" class="critical-alert-banner hidden">
+                <div class="banner-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="banner-content" id="bannerContent">Loading alerts...</div>
+                <button class="banner-close" onclick="document.getElementById('criticalAlertBanner').classList.add('hidden')">&times;</button>
+            </div>
+
+            <!-- Content Container -->
+            <div class="content-body">
+
+                <!-- ========================================================
+                     TAB 1: DASHBOARD
+                     ======================================================== -->
+                <section id="tab-dashboard" class="tab-pane active">
+                    <!-- KPI Metric Cards -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card card-total">
+                            <div class="kpi-icon"><i class="fa-solid fa-prescription-bottle-medical"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Total Medicines</span>
+                                <span class="kpi-value" id="kpiTotal">0</span>
+                                <span class="kpi-trend positive"><i class="fa-solid fa-check"></i> Monitored</span>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card card-instock">
+                            <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Optimal Stock</span>
+                                <span class="kpi-value" id="kpiInStock">0</span>
+                                <span class="kpi-trend positive"><i class="fa-solid fa-shield-halved"></i> Healthy</span>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card card-lowstock">
+                            <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Low / Out of Stock</span>
+                                <span class="kpi-value" id="kpiLowStock">0</span>
+                                <span class="kpi-trend warning"><i class="fa-solid fa-arrow-trend-down"></i> Needs Refill</span>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card card-expired">
+                            <div class="kpi-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
+                            <div class="kpi-info">
+                                <span class="kpi-label">Expired / Critical</span>
+                                <span class="kpi-value" id="kpiExpired">0</span>
+                                <span class="kpi-trend danger"><i class="fa-solid fa-ban"></i> Safety Risk</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts & Quick Insights Grid -->
+                    <div class="dashboard-grid">
+                        <!-- Left Chart: Stock Distribution -->
+                        <div class="glass-card chart-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <h3><i class="fa-solid fa-chart-pie"></i> Inventory Health Status</h3>
+                                    <p>Live distribution of stock levels</p>
+                                </div>
+                                <span class="badge badge-info">Real-time</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="stockDistributionChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Right Chart: Expiry Timeline Breakdown -->
+                        <div class="glass-card chart-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <h3><i class="fa-solid fa-hourglass-half"></i> Expiry Risk Radar</h3>
+                                    <p>Days remaining across prescription stock</p>
+                                </div>
+                                <span class="badge badge-warning">Days Left</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="expiryTimelineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Today's Upcoming Schedule & Quick Action Hub -->
+                    <div class="dashboard-lower-grid">
+                        <!-- Upcoming Doses Today -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <h3><i class="fa-solid fa-calendar-check"></i> Today's Dose Timeline</h3>
+                                    <p>Scheduled reminders sorted chronologically</p>
+                                </div>
+                                <button class="btn btn-sm btn-ghost" onclick="switchTab('schedule')">View Full Schedule &rarr;</button>
+                            </div>
+                            <div class="schedule-stream" id="dashboardScheduleStream">
+                                <div class="empty-state">Loading schedule...</div>
+                            </div>
+                        </div>
+
+                        <!-- Low Stock Attention Required -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <h3><i class="fa-solid fa-truck-ramp-box"></i> Priority Restock Center</h3>
+                                    <p>Items reaching or below safety threshold</p>
+                                </div>
+                                <button class="btn btn-sm btn-ghost" onclick="switchTab('inventory')">Manage Stock &rarr;</button>
+                            </div>
+                            <div class="stock-action-list" id="dashboardLowStockList">
+                                <div class="empty-state">No restock emergencies right now.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================================
+                     TAB 2: MEDICINES CATALOG
+                     ======================================================== -->
+                <section id="tab-medicines" class="tab-pane">
+                    <!-- Filters and Search Bar -->
+                    <div class="toolbar-card glass-card">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="medicineSearchInput" placeholder="Search by name, ID (e.g. MED001), or notes...">
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterStockStatus" class="select-control">
+                                <option value="ALL">All Stock Statuses</option>
+                                <option value="IN_STOCK">Optimal Stock</option>
+                                <option value="LOW_STOCK">Low Stock</option>
+                                <option value="OUT_OF_STOCK">Out of Stock</option>
+                            </select>
+                            <select id="filterExpiryStatus" class="select-control">
+                                <option value="ALL">All Expiry Statuses</option>
+                                <option value="SAFE">Safe (>30 Days)</option>
+                                <option value="NEAR_EXPIRY">Near Expiry (&le;30 Days)</option>
+                                <option value="CRITICAL">Critical (&le;7 Days)</option>
+                                <option value="EXPIRED">Expired</option>
+                            </select>
+                            <button class="btn btn-secondary" id="btnRefreshMedicines" title="Sync with C++ Backend">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Medicines Grid Cards -->
+                    <div class="medicine-grid" id="medicinesContainer">
+                        <div class="empty-state">Loading medicine records...</div>
+                    </div>
+                </section>
+
+                <!-- ========================================================
+                     TAB 3: DOSE SCHEDULE & REMINDERS
+                     ======================================================== -->
+                <section id="tab-schedule" class="tab-pane">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <h3><i class="fa-solid fa-clock"></i> 24-Hour Dose Master Schedule</h3>
+                                <p>Automated timetable calculated from individual medicine reminder configurations</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="btn btn-sm btn-secondary" id="btnCheckRemindersNow">
+                                    <i class="fa-solid fa-radar"></i> Poll Active Reminders Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="schedule-timeline-container" id="scheduleTimeline">
+                            <div class="empty-state">Loading daily timetable...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================================
+                     TAB 4: INVENTORY & STOCK
+                     ======================================================== -->
+                <section id="tab-inventory" class="tab-pane">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <h3><i class="fa-solid fa-boxes-stacked"></i> Inventory Ledger</h3>
+                                <p>Accurate unit accounting, threshold triggers, and quick stock adjustments</p>
+                            </div>
+                            <button class="btn btn-sm btn-primary" onclick="openRestockModal()">
+                                <i class="fa-solid fa-plus"></i> Bulk Restock
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="modern-table" id="inventoryTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Medicine Name</th>
+                                        <th>Current Stock</th>
+                                        <th>Safety Threshold</th>
+                                        <th>Status</th>
+                                        <th>Quick Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody">
+                                    <tr><td colspan="6" class="text-center">Loading inventory table...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================================
+                     TAB 5: EXPIRY RADAR & HEALTH SAFETY
+                     ======================================================== -->
+                <section id="tab-expiry" class="tab-pane">
+                    <div class="expiry-stats-grid">
+                        <div class="expiry-stat-card danger">
+                            <i class="fa-solid fa-ban"></i>
+                            <div>
+                                <h4 id="expiryExpiredCount">0</h4>
+                                <span>Expired Medicines (Disposal Needed)</span>
+                            </div>
+                        </div>
+                        <div class="expiry-stat-card warning">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <div>
+                                <h4 id="expiryNearCount">0</h4>
+                                <span>Expiring within 30 Days</span>
+                            </div>
+                        </div>
+                        <div class="expiry-stat-card safe">
+                            <i class="fa-solid fa-shield-check"></i>
+                            <div>
+                                <h4 id="expirySafeCount">0</h4>
+                                <span>Safe Prescriptions</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card mt-4">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <h3><i class="fa-solid fa-calendar-xmark"></i> Expiry Audit Report</h3>
+                                <p>Sorted in order of urgency using C++ calendar comparison logic</p>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Medicine Name</th>
+                                        <th>Expiry Date</th>
+                                        <th>Days Left</th>
+                                        <th>Risk Category</th>
+                                        <th>Recommended Protocol</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expiryTableBody">
+                                    <tr><td colspan="6" class="text-center">Loading expiry ledger...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================================
+                     TAB 6: VIVA / C++ REST CONSOLE
+                     ======================================================== -->
+                <section id="tab-api-console" class="tab-pane">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <h3><i class="fa-solid fa-terminal"></i> C++ Backend Inspector (For Viva & Evaluation)</h3>
+                                <p>Direct interaction with C++ `cpp-httplib` server endpoints and live JSON inspection</p>
+                            </div>
+                            <span class="badge badge-success">C++ Standard 17 Engine</span>
+                        </div>
+
+                        <div class="api-console-grid">
+                            <div class="api-tester-panel">
+                                <label class="form-label">Select API Endpoint to Probe:</label>
+                                <div class="endpoint-picker">
+                                    <select id="apiEndpointSelect" class="select-control">
+                                        <option value="/api/health">GET /api/health — System Heartbeat</option>
+                                        <option value="/api/medicines">GET /api/medicines — Complete Database</option>
+                                        <option value="/api/inventory/status">GET /api/inventory/status — Stock Ledger</option>
+                                        <option value="/api/inventory/alerts">GET /api/inventory/alerts — Threshold Violations</option>
+                                        <option value="/api/reminders/schedule">GET /api/reminders/schedule — 24H Dose Matrix</option>
+                                        <option value="/api/reminders/check">GET /api/reminders/check — Active Due Doses</option>
+                                        <option value="/api/expiry/report">GET /api/expiry/report — Sorted Expiry Audit</option>
+                                        <option value="/api/expiry/expired">GET /api/expiry/expired — Toxic Expired Stock</option>
+                                    </select>
+                                    <button class="btn btn-primary" id="btnExecuteApiProbe">
+                                        <i class="fa-solid fa-play"></i> Send HTTP Request
+                                    </button>
+                                </div>
+
+                                <div class="mt-4">
+                                    <div class="console-label-group">
+                                        <span class="form-label">Live C++ Response Output (JSON):</span>
+                                        <span class="badge badge-info" id="apiResponseStatus">Ready</span>
+                                    </div>
+                                    <pre class="code-block" id="apiResponseViewer">// Click "Send HTTP Request" to see raw C++ backend JSON response...</pre>
+                                </div>
+                            </div>
+
+                            <div class="architecture-panel">
+                                <h4><i class="fa-solid fa-circle-nodes"></i> Technical Viva Highlights</h4>
+                                <ul class="tech-list">
+                                    <li><strong>Core Engine:</strong> Compiled C++ (MinGW-W64 GCC) using pure object-oriented design (Encapsulation, Composition, Dependency Injection).</li>
+                                    <li><strong>REST Protocol:</strong> Single-header <code>cpp-httplib</code> running on Winsock2 with non-blocking endpoint routing.</li>
+                                    <li><strong>Serialization:</strong> <code>nlohmann/json</code> parsing and emitting JSON strings with zero memory leaks.</li>
+                                    <li><strong>Data Persistence:</strong> Atomic file I/O writing pipe-delimited records to <code>medicines.txt</code>.</li>
+                                    <li><strong>Time Calculus:</strong> System clock normalization via POSIX <code>&lt;ctime&gt;</code> structure <code>tm</code>.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ================================================================
+         MODAL: ADD NEW MEDICINE
+         ================================================================ -->
+    <div class="modal-overlay" id="addMedicineModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="modal-icon"><i class="fa-solid fa-prescription-bottle-medical"></i></div>
+                    <h3>Add New Medicine</h3>
+                </div>
+                <button class="modal-close" onclick="closeModal('addMedicineModal')">&times;</button>
+            </div>
+            <form id="addMedicineForm" onsubmit="handleCreateMedicine(event)">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label class="form-label">Medicine Name *</label>
+                            <input type="text" id="addName" class="form-control" placeholder="e.g. Paracetamol 500mg" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Initial Quantity *</label>
+                            <input type="number" id="addQuantity" class="form-control" min="0" value="30" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label class="form-label">Expiry Date (DD/MM/YYYY) *</label>
+                            <input type="text" id="addExpiry" class="form-control" placeholder="31/12/2027" pattern="\d{2}/\d{2}/\d{4}" required>
+                            <small class="form-hint">Format: DD/MM/YYYY (e.g. 15/12/2027)</small>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="form-label">Low Stock Threshold</label>
+                            <input type="number" id="addThreshold" class="form-control" min="0" value="5">
+                            <small class="form-hint">Alert triggers when stock &le; threshold</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Dosage Instructions *</label>
+                        <input type="text" id="addDosage" class="form-control" placeholder="e.g. 1 tablet after meals" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Daily Reminder Times (HH:MM)</label>
+                        <div class="tag-input-container" id="reminderTagsContainer">
+                            <!-- Tags will be dynamically injected here -->
+                            <input type="text" id="reminderTimeInput" class="tag-input" placeholder="e.g. 08:00 (press Enter or Add)">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="addReminderTagFromInput()">Add Time</button>
+                        </div>
+                        <small class="form-hint">Enter 24-hour time format (e.g. 08:00, 14:00, 20:30)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Special Notes / Warnings</label>
+                        <textarea id="addNotes" class="form-control" rows="2" placeholder="e.g. Store in a cool dry place, take with full glass of water"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addMedicineModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save to C++ Backend</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         MODAL: QUICK RESTOCK
+         ================================================================ -->
+    <div class="modal-overlay" id="restockModal">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="modal-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                    <h3>Restock Medicine</h3>
+                </div>
+                <button class="modal-close" onclick="closeModal('restockModal')">&times;</button>
+            </div>
+            <form id="restockForm" onsubmit="handleRestockSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Select Medicine</label>
+                        <select id="restockMedicineSelect" class="select-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity to Add *</label>
+                        <input type="number" id="restockQuantity" class="form-control" min="1" value="20" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('restockModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         MODAL: LIVE DOSE REMINDER ALARM (VIVA SHOWSTOPPER)
+         ================================================================ -->
+    <div class="modal-overlay reminder-alarm-overlay" id="reminderAlarmModal">
+        <div class="modal-dialog modal-alarm">
+            <div class="alarm-pulsing-icon">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+            <h2 class="alarm-title">Dose Reminder Alert!</h2>
+            <p class="alarm-subtitle">It is time for your scheduled prescription dose</p>
+
+            <div class="alarm-medicine-card">
+                <h3 id="alarmMedName">Paracetamol 500mg</h3>
+                <div class="alarm-med-meta">
+                    <span class="badge badge-primary" id="alarmMedTime">08:00 AM</span>
+                    <span class="badge badge-info" id="alarmMedDosage">1 Tablet after food</span>
+                </div>
+                <p class="alarm-notes" id="alarmMedNotes">Take with a full glass of water</p>
+            </div>
+
+            <div class="alarm-actions">
+                <button class="btn btn-success btn-lg" id="btnTakeDoseAndDeduct">
+                    <i class="fa-solid fa-check"></i> I Took This Dose (Deduct 1 Unit)
+                </button>
+                <button class="btn btn-secondary" onclick="dismissAlarm()">
+                    <i class="fa-solid fa-xmark"></i> Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- App JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
+

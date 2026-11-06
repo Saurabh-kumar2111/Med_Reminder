@@ -1,0 +1,47 @@
+# ============================================================
+# .gitignore - MediPulse C++ System
+# ============================================================
+
+# Compiled Binaries & Object Files
+*.exe
+*.o
+*.obj
+*.dll
+*.so
+*.dylib
+*.a
+*.out
+*.app
+
+# Executables by specific name (safety guarantee)
+MedicineServer.exe
+MedicineSystem.exe
+MedicineServer
+
+# Debugging Symbols & Build Caches
+*.pdb
+*.ilk
+*.dSYM/
+*.idb
+
+# IDE & Editor Metadata
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosv
+*.sln
+*.vcxproj*
+
+# Operating System Clutter
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+._*
+
+# Temporary & Log Files
+*.log
+*.tmp
+*.bak

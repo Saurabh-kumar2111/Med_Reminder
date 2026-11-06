@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: medipulse-cpp-system
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: Dockerfile
+

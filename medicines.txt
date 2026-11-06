@@ -1,0 +1,6 @@
+MED001|Paracetamol|108|15/12/2027|1 tablet after meals|08:00,20:00|Store in cool place|15
+MED002|Amoxicillin 500mg|17|30/06/2026|1 capsule before meals|09:00|Complete full course|12
+MED003|Cough Syrup D|26|20/11/2026|10ml before sleep|21:30|Keep tightly closed|5
+MED004|Ibuprofen Forte|29|10/05/2027|1 tablet as needed|10:00,18:00|Take with water|5
+MED005|Azithromycin 250mg|15|15/12/2026|1 tablet daily|14:00|Antibiotic|5
+MED006|abc|27|27/11/2030|xyz|08:00,20:00|don't  take|10
